@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>域名测速与重定向工具</title>
+    <title>节点测速与重定向工具</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -394,22 +394,22 @@
     <div class="container">
         <div class="loading-overlay" id="loading-overlay">
             <div class="spinner"></div>
-            <h3>正在测试域名访问速度...</h3>
+            <h3>正在测试节点访问速度...</h3>
         </div>
         
         <header>
-            <h1><i class="fas fa-bolt"></i> 域名测速工具</h1>
-            <p class="subtitle">测试多个域名的响应速度，完成后将自动重定向到最快域名</p>
+            <h1><i class="fas fa-bolt"></i> 节点测速工具</h1>
+            <p class="subtitle">测试多个节点的响应速度，完成后将自动重定向到最快节点</p>
             <p class="subtitle">当前路径参数: <span id="path-display">/</span></p>
         </header>
         
         <div class="status-container">
             <div class="status-item">
-                <div class="status-label">测试域名数量</div>
+                <div class="status-label">测试节点数量</div>
                 <div class="status-value" id="total-count">7</div>
             </div>
             <div class="status-item">
-                <div class="status-label">已测试域名</div>
+                <div class="status-label">已测试节点</div>
                 <div class="status-value" id="tested-count">0</div>
             </div>
             <div class="status-item">
@@ -440,7 +440,7 @@
     </div>
 
     <script>
-        // 测试的域名列表（固定）
+        // 测试的节点列表（固定）
         const testDomains = [
             "https://blockhaity.github.io",
             "https://blockhaity.vercel.app",
@@ -509,7 +509,7 @@
             return "/"; // 未提供参数时默认使用根路径
         }
         
-        // 初始化域名列表
+        // 初始化节点列表
         function initDomainList() {
             targetPath = getTargetPathFromUrl();
             document.getElementById('path-display').textContent = targetPath;
@@ -537,7 +537,7 @@
             });
         }
         
-        // 测试单个域名的速度
+        // 测试单个节点的速度
         function testDomainSpeed(domain, index) {
             return new Promise((resolve) => {
                 const startTime = performance.now();
@@ -548,7 +548,7 @@
                     resolve({domain, time: Infinity, status: 'timeout'});
                 }, timeout);
                 
-                // 测试域名根路径
+                // 测试节点根路径
                 const testUrl = domain + '/';
                 
                 fetch(testUrl, {
@@ -614,7 +614,7 @@
             // 隐藏加载层
             loadingOverlay.style.display = 'none';
             
-            // 如果没有找到可用域名，使用第一个作为后备
+            // 如果没有找到可用节点，使用第一个作为后备
             if (!fastestDomain || fastestDomain.time === Infinity) {
                 fastestDomain = {domain: testDomains[0]};
             }
@@ -646,17 +646,17 @@
                 
                 if (countdown <= 0) {
                     clearInterval(countdownInterval);
-                    // 重定向到完整URL（域名+目标路径）
+                    // 重定向到完整URL（节点+目标路径）
                     window.location.href = fastestDomain.domain + targetPath;
                 }
             }, 1000);
         }
         
-        // 开始测试所有域名
+        // 开始测试所有节点
         async function startTesting() {
             initDomainList();
             
-            // 同时测试所有域名
+            // 同时测试所有节点
             const testPromises = testDomains.map((domain, index) => 
                 testDomainSpeed(domain, index).then(result => {
                     const testedCount = updateDomainResult(index, result);
@@ -682,7 +682,7 @@
             // 添加立即跳转按钮事件
             document.getElementById('redirect-btn').addEventListener('click', () => {
                 clearInterval(countdownInterval);
-                // 重定向到完整URL（域名+目标路径）
+                // 重定向到完整URL（节点+目标路径）
                 window.location.href = fastestDomain.domain + targetPath;
             });
             
