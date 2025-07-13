@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>节点自动选择</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #3498db;
+            --success: #2ecc71;
+            --warning: #f39c12;
+            --danger: #e74c3c;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: 
+                url('banner.png') center/cover no-repeat fixed;
+            color: white;
+            min-height: 100vh;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* 背景覆盖层增强对比度 */
+        body::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: -1;
+        }
+        
+        .container {
+            max-width: 780px;
+            width: 100%;
+            background: rgba(30, 30, 50, 0.75);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            position: relative;
+            overflow: hidden;
+            z-index: 10;
+        }
+        
+        /* 顶部装饰条 */
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #ff7e5f, #feb47b, #26d0ce);
+            z-index: 1;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        h1 {
+            font-size: 2.1rem;
+            margin-bottom: 8px;
+            background: linear-gradient(to right, #ff7e5f, #feb47b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .subtitle {
+            font-size: 0.95rem;
+            opacity: 0.9;
+            margin: 0 auto 8px;
+            max-width: 500px;
+            line-height: 1.4;
+        }
+        
+        .status-container {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .status-item {
+            text-align: center;
+            flex: 1;
+            position: relative;
+            padding: 0 5px;
+        }
+        
+        .status-label {
+            font-size: 0.85rem;
+            opacity: 0.8;
+            margin-bottom: 3px;
+        }
+        
+        .status-value {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #feb47b;
+        }
+        
+        .url-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .url-item {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 12px 15px;
+            display: flex;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            animation: fadeIn 0.5s forwards;
+            opacity: 0;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+        
+        .url-item:nth-child(1) { animation-delay: 0.1s; }
+        .url-item:nth-child(2) { animation-delay: 0.2s; }
+        .url-item:nth-child(3) { animation-delay: 0.3s; }
+        .url-item:nth-child(4) { animation-delay: 0.4s; }
+        .url-item:nth-child(5) { animation-delay: 0.5s; }
+        .url-item:nth-child(6) { animation-delay: 0.6s; }
+        .url-item:nth-child(7) { animation-delay: 0.7s; }
+        
+        .url-item:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .url-item.loading:before {
+            background: linear-gradient(90deg, transparent, var(--primary), transparent);
+            animation: loading 1.5s infinite;
+        }
+        
+        @keyframes loading {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        .url-item.success:before {
+            background: var(--success);
+        }
+        
+        .url-item.error:before {
+            background: var(--danger);
+        }
+        
+        .url-icon {
+            font-size: 1.4rem;
+            margin-right: 10px;
+            color: var(--primary);
+            width: 34px;
+            height: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.12);
+            flex-shrink: 0;
+        }
+        
+        .url-details {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .url-name {
+            font-size: 0.82rem;
+            opacity: 0.9;
+            margin-bottom: 6px;
+            word-break: break-all;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.3;
+        }
+        
+        .url-status {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .ping-value {
+            font-weight: bold;
+            font-size: 1.05rem;
+        }
+        
+        .status-text {
+            font-size: 0.8rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.12);
+        }
+        
+        .result-container {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 18px;
+            text-align: center;
+            margin-top: 15px;
+            border: 1px solid var(--primary);
+            display: none;
+            animation: fadeIn 0.5s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .result-title {
+            font-size: 1.4rem;
+            margin-bottom: 10px;
+            color: #feb47b;
+        }
+        
+        .fastest-url {
+            font-size: 1.05rem;
+            background: rgba(46, 204, 113, 0.2);
+            padding: 10px;
+            border-radius: 8px;
+            margin: 12px 0;
+            word-break: break-all;
+            border: 1px solid var(--success);
+            line-height: 1.4;
+        }
+        
+        .redirect-text {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+        }
+        
+        .countdown {
+            font-size: 1.9rem;
+            font-weight: bold;
+            color: #ff7e5f;
+            margin: 0 4px;
+            display: inline-block;
+            min-width: 32px;
+        }
+        
+        .btn {
+            background: linear-gradient(to right, #ff7e5f, #feb47b);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-top: 12px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .progress-container {
+            height: 5px;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 3px;
+            margin-top: 12px;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(to right, #4dabf7, #ff7e5f);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            backdrop-filter: blur(5px);
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top: 4px solid #4dabf7;
+            border-radius: 50%;
+            margin-bottom: 20px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+                max-width: 95%;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .status-container {
+                flex-direction: column;
+                gap: 10px;
+                padding: 10px;
+            }
+            
+            .url-list {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+            
+            .result-title {
+                font-size: 1.3rem;
+            }
+            
+            .redirect-text {
+                font-size: 1rem;
+            }
+            
+            .countdown {
+                font-size: 1.7rem;
+            }
+            
+            .btn {
+                padding: 9px 18px;
+                font-size: 0.95rem;
+            }
+        }
+        
+        .footer {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="loading-overlay" id="loading-overlay">
+            <div class="spinner"></div>
+            <h3>正在测试访问速度...</h3>
+        </div>
+        
+        <header>
+            <h1><i class="fas fa-bolt"></i> 节点自动选择</h1>
+            <p class="subtitle">测试多个节点的响应速度，完成后将自动重定向到最快节点</p>
+            <p class="subtitle">当前路径参数: <span id="path-display">/</span></p>
+        </header>
+        
+        <div class="status-container">
+            <div class="status-item">
+                <div class="status-label">测试域名数量</div>
+                <div class="status-value" id="total-count">7</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">已测试域名</div>
+                <div class="status-value" id="tested-count">0</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">最快响应时间</div>
+                <div class="status-value" id="fastest-ping">-</div>
+            </div>
+        </div>
+        
+        <div class="url-list" id="url-list">
+            <!-- URL列表将通过JavaScript动态生成 -->
+        </div>
+        
+        <div class="result-container" id="result-container">
+            <h2 class="result-title"><i class="fas fa-trophy"></i> 测试完成！</h2>
+            <div class="redirect-text">
+                将在 <span id="countdown" class="countdown">3</span> 秒后重定向到：
+            </div>
+            <div id="full-redirect-url" class="fastest-url">https://example.com/</div>
+            
+            <div class="progress-container">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
+            
+            <button class="btn" id="redirect-btn">
+                <i class="fas fa-external-link-alt"></i> 立即跳转
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 测试的域名列表（固定）
+        const testDomains = [
+            "https://blockhaity.github.io",
+            "https://blockhaity.vercel.app",
+            "https://blockhaity.netlify.app",
+            "https://blockhaity.pages.dev",
+            "https://blog-vercal.blockhaity.dpdns.org",
+            "https://blog.blockhaity.dpdns.org",
+            "https://blog.blockhaity.qzz.io"
+        ];
+        
+        // 存储测试结果
+        const testResults = [];
+        let fastestDomain = null;
+        let countdown = 3;
+        let countdownInterval;
+        let targetPath = "/"; // 默认路径为根目录
+        
+        // 从URL参数获取目标路径
+        function getTargetPathFromUrl() {
+            const params = new URLSearchParams(window.location.search);
+            const pathParam = params.get('target');
+            
+            // 确保路径以斜杠开头
+            if (pathParam) {
+                return pathParam.startsWith('/') ? pathParam : '/' + pathParam;
+            }
+            return "/"; // 未提供参数时默认使用根路径
+        }
+        
+        // 初始化域名列表
+        function initDomainList() {
+            targetPath = getTargetPathFromUrl();
+            document.getElementById('path-display').textContent = targetPath;
+            
+            const urlList = document.getElementById('url-list');
+            urlList.innerHTML = '';
+            
+            testDomains.forEach((domain, index) => {
+                const urlItem = document.createElement('div');
+                urlItem.className = 'url-item loading';
+                urlItem.id = `domain-${index}`;
+                urlItem.innerHTML = `
+                    <div class="url-icon">
+                        <i class="fas fa-globe"></i>
+                    </div>
+                    <div class="url-details">
+                        <div class="url-name">${domain}</div>
+                        <div class="url-status">
+                            <div class="ping-value">-</div>
+                            <div class="status-text">测试中...</div>
+                        </div>
+                    </div>
+                `;
+                urlList.appendChild(urlItem);
+            });
+        }
+        
+        // 测试单个域名的速度
+        function testDomainSpeed(domain, index) {
+            return new Promise((resolve) => {
+                const startTime = performance.now();
+                const timeout = 5000; // 5秒超时
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => {
+                    controller.abort();
+                    resolve({domain, time: Infinity, status: 'timeout'});
+                }, timeout);
+                
+                // 测试域名根路径
+                const testUrl = domain + '/';
+                
+                fetch(testUrl, {
+                    method: 'HEAD',
+                    mode: 'no-cors',
+                    signal: controller.signal
+                })
+                .then(() => {
+                    clearTimeout(timeoutId);
+                    const time = performance.now() - startTime;
+                    resolve({domain, time, status: 'success'});
+                })
+                .catch(() => {
+                    clearTimeout(timeoutId);
+                    resolve({domain, time: Infinity, status: 'error'});
+                });
+            });
+        }
+        
+        // 更新UI显示测试结果
+        function updateDomainResult(index, result) {
+            const domainItem = document.getElementById(`domain-${index}`);
+            if (!domainItem) return;
+            
+            const pingValue = domainItem.querySelector('.ping-value');
+            const statusText = domainItem.querySelector('.status-text');
+            
+            // 更新类名
+            domainItem.classList.remove('loading');
+            if (result.status === 'success') {
+                domainItem.classList.add('success');
+                statusText.textContent = '成功';
+                statusText.style.color = '#2ecc71';
+                pingValue.textContent = `${Math.round(result.time)}ms`;
+                pingValue.style.color = '#feb47b';
+                
+                // 更新最快结果
+                if (!fastestDomain || result.time < fastestDomain.time) {
+                    fastestDomain = result;
+                    document.getElementById('fastest-ping').textContent = `${Math.round(result.time)}ms`;
+                }
+            } else {
+                domainItem.classList.add('error');
+                statusText.textContent = result.status === 'timeout' ? '超时' : '错误';
+                statusText.style.color = '#e74c3c';
+                pingValue.textContent = '失败';
+                pingValue.style.color = '#e74c3c';
+            }
+            
+            // 更新已测试计数
+            const testedCount = document.querySelectorAll('.url-item:not(.loading)').length;
+            document.getElementById('tested-count').textContent = testedCount;
+            
+            return testedCount;
+        }
+        
+        // 显示结果并开始倒计时
+        function showResults() {
+            const resultContainer = document.getElementById('result-container');
+            const fullRedirectElement = document.getElementById('full-redirect-url');
+            const loadingOverlay = document.getElementById('loading-overlay');
+            
+            // 隐藏加载层
+            loadingOverlay.style.display = 'none';
+            
+            // 如果没有找到可用域名，使用第一个作为后备
+            if (!fastestDomain || fastestDomain.time === Infinity) {
+                fastestDomain = {domain: testDomains[0]};
+            }
+            
+            // 显示完整重定向URL
+            const fullUrl = fastestDomain.domain + targetPath;
+            fullRedirectElement.textContent = fullUrl;
+            
+            // 显示结果区域
+            resultContainer.style.display = 'block';
+            
+            // 开始倒计时重定向
+            startCountdown();
+        }
+        
+        // 开始倒计时重定向
+        function startCountdown() {
+            const countdownElement = document.getElementById('countdown');
+            const progressBar = document.getElementById('progress-bar');
+            let width = 0;
+            
+            countdownInterval = setInterval(() => {
+                countdown--;
+                countdownElement.textContent = countdown;
+                
+                // 更新进度条
+                width = 100 - (countdown / 3 * 100);
+                progressBar.style.width = `${width}%`;
+                
+                if (countdown <= 0) {
+                    clearInterval(countdownInterval);
+                    // 重定向到完整URL（域名+目标路径）
+                    window.location.href = fastestDomain.domain + targetPath;
+                }
+            }, 1000);
+        }
+        
+        // 开始测试所有域名
+        async function startTesting() {
+            initDomainList();
+            
+            // 同时测试所有域名
+            const testPromises = testDomains.map((domain, index) => 
+                testDomainSpeed(domain, index).then(result => {
+                    const testedCount = updateDomainResult(index, result);
+                    
+                    // 如果是最后一个完成的测试，显示结果
+                    if (testedCount === testDomains.length) {
+                        setTimeout(showResults, 400); // 延迟一点显示结果
+                    }
+                    
+                    return result;
+                })
+            );
+            
+            // 等待所有测试完成
+            await Promise.all(testPromises);
+        }
+        
+        // 页面加载完成后开始测试
+        document.addEventListener('DOMContentLoaded', () => {
+            // 添加立即跳转按钮事件
+            document.getElementById('redirect-btn').addEventListener('click', () => {
+                clearInterval(countdownInterval);
+                // 重定向到完整URL（域名+目标路径）
+                window.location.href = fastestDomain.domain + targetPath;
+            });
+            
+            // 开始测试
+            startTesting();
+        });
+    </script>
+</body>
+</html>
