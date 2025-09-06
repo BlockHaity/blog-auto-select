@@ -24,7 +24,7 @@
         body {
             background:
                 linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)),
-                url('banner.png') center/cover no-repeat fixed;
+                url('https://api.blockhaity.qzz.io/images') center/cover no-repeat fixed;
             color: white;
             min-height: 100vh;
             padding: 15px;
@@ -487,7 +487,7 @@
             "https://blockhaity.vercel.app",
             "https://blockhaity.netlify.app",
             "https://blockhaity.pages.dev",
-            "https://blog-vercal.blockhaity.qzz.io",
+            "https://blog-vercal.blockhaity.dpdns.org",
             "https://blog-edgeone.blockhaity.qzz.io/"
         ];
 
@@ -503,7 +503,7 @@
 
         // 缓存背景图片
         async function cacheBackgroundImage() {
-            const imageUrl = 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop';
+            const imageUrl = 'https://api.blockhaity.qzz.io/images';
             const cacheName = 'banner-cache-v1';
 
             try {
